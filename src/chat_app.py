@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
 import os
-from dotenv import load_dotenv
+from dotenv import load_dotenv  # Load environment variables from .env file
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 from azure.ai.inference.models import SystemMessage, UserMessage
