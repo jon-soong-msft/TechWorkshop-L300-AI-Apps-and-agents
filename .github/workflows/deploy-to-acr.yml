@@ -31,6 +31,16 @@ jobs:
       run: |
         echo "${{ secrets.ENV }}" > src/.env
         
+    - name: Verify .env file creation
+      run: |
+        if [ -f src/.env ]; then
+          echo "✓ .env file created successfully"
+          echo "File size: $(stat -c%s src/.env) bytes"
+        else
+          echo "✗ Failed to create .env file"
+          exit 1
+        fi
+        
     - name: Build Docker image
       run: |
         docker build -t ${{ env.REGISTRY_NAME }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} ./src

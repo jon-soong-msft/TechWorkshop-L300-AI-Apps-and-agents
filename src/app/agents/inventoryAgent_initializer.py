@@ -1,20 +1,22 @@
+from azure.ai.agents.models import CodeInterpreterTool, FunctionTool, ToolSet
+from dotenv import load_dotenv
+from tools.inventoryCheck import inventory_check
+import json
+from typing import Callable, Set, Any
+from azure.identity import DefaultAzureCredential
+from azure.ai.projects import AIProjectClient
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from azure.ai.projects import AIProjectClient
-from azure.identity import DefaultAzureCredential
-from azure.ai.agents.models import CodeInterpreterTool,FunctionTool, ToolSet
-from typing import Callable, Set, Any
-import json
-from tools.inventoryCheck import inventory_check
-from dotenv import load_dotenv
 load_dotenv()
 
-IA_PROMPT_TARGET = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'prompts', 'InventoryAgentPrompt.txt')
+IA_PROMPT_TARGET = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))), 'prompts', 'InventoryAgentPrompt.txt')
 with open(IA_PROMPT_TARGET, 'r', encoding='utf-8') as file:
     IA_PROMPT = file.read()
 
 project_endpoint = os.environ["AZURE_AI_AGENT_ENDPOINT"]
+agent_id = os.environ["inventory_agent"]
 
 project_client = AIProjectClient(
     endpoint=project_endpoint,
@@ -32,11 +34,29 @@ toolset.add(functions)
 project_client.agents.enable_auto_function_calls(tools=functions)
 
 with project_client:
-    # Create an agent with the Bing Grounding tool
-    agent = project_client.agents.create_agent(
-        model=os.getenv("AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME"),  # Model deployment name
-        name="Zava Inventory Agent",  # Name of the agent
-        instructions=IA_PROMPT,  # Instructions for the agent
-        toolset=toolset
-    )
-    print(f"Created agent, ID: {agent.id}")
+    agent_exists = False
+    if agent_id:
+        # Check if agent exists.
+        agent = project_client.agents.get_agent(agent_id)
+        print(f"Retrieved existing agent, ID: {agent.id}")
+        agent_exists = True
+
+    if agent_exists:
+        agent = project_client.agents.update_agent(
+            agent_id=agent.id,
+            # Model deployment name
+            model=os.getenv("AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME"),
+            name="Zava Inventory Agent",  # Name of the agent
+            instructions=IA_PROMPT,  # Instructions for the agent
+            # toolset=toolset
+        )
+        print(f"Updated agent, ID: {agent.id}")
+    else:
+        agent = project_client.agents.create_agent(
+            # Model deployment name
+            model=os.getenv("AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME"),
+            name="Zava Inventory Agent",  # Name of the agent
+            instructions=IA_PROMPT,  # Instructions for the agent
+            toolset=toolset
+        )
+        print(f"Created agent, ID: {agent.id}")

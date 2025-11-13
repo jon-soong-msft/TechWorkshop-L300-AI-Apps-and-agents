@@ -1,19 +1,21 @@
+from tools.imageCreationTool import create_image
+from typing import Callable, Set, Any
+from azure.ai.agents.models import FunctionTool, ToolSet
+from azure.identity import DefaultAzureCredential
+from azure.ai.projects import AIProjectClient
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from azure.ai.projects import AIProjectClient
-from azure.identity import DefaultAzureCredential
-from azure.ai.agents.models import FunctionTool, ToolSet
-from typing import Callable, Set, Any
-from tools.imageCreationTool import create_image
 
 # Load the prompt instructions for the interior design agent from a file
 # path = r'prompts\InteriorDesignAgentPrompt.txt'
-ID_PROMPT_TARGET = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 'prompts', 'InteriorDesignAgentPrompt.txt')
+ID_PROMPT_TARGET = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))), 'prompts', 'InteriorDesignAgentPrompt.txt')
 with open(ID_PROMPT_TARGET, 'r', encoding='utf-8') as file:
     ID_PROMPT = file.read()
 
 project_endpoint = os.environ["AZURE_AI_AGENT_ENDPOINT"]
+agent_id = os.environ["interior_designer"]
 
 project_client = AIProjectClient(
     endpoint=project_endpoint,
@@ -31,11 +33,31 @@ toolset = ToolSet()
 toolset.add(functions)
 project_client.agents.enable_auto_function_calls(tools=functions)
 
- # Create the agent using a specific deployment, name, instructions, and toolset
+
 with project_client:
-    agent = project_client.agents.create_agent(
-        model=os.environ["AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME"],  # Model deployment name
-        name="Zava Interior Design Agent",  # Name of the agent
-        instructions=ID_PROMPT,  # Instructions for the agent
-        toolset=toolset)
-    print(f"Created agent, ID: {agent.id}")
+    agent_exists = False
+    if agent_id:
+        # Check if agent exists.
+        agent = project_client.agents.get_agent(agent_id)
+        print(f"Retrieved existing agent, ID: {agent.id}")
+        agent_exists = True
+
+    if agent_exists:
+        agent = project_client.agents.update_agent(
+            agent_id=agent.id,
+            # Model deployment name
+            model=os.environ["AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME"],
+            name="Zava Interior Design Agent",  # Name of the agent
+            instructions=ID_PROMPT,  # Instructions for the agent
+            # toolset=toolset
+        )
+        print(f"Updated agent, ID: {agent.id}")
+    else:
+        agent = project_client.agents.create_agent(
+            # Model deployment name
+            model=os.environ["AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME"],
+            name="Zava Interior Design Agent",  # Name of the agent
+            instructions=ID_PROMPT,  # Instructions for the agentF
+            toolset=toolset
+        )
+        print(f"Created agent, ID: {agent.id}")
