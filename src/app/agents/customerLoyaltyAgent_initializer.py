@@ -33,7 +33,7 @@ project_client.agents.enable_auto_function_calls(tools=functions)
 with project_client:
     agent = project_client.agents.create_agent(
         model=os.getenv("AZURE_AI_AGENT_MODEL_DEPLOYMENT_NAME"),  # Model deployment name
-        name="Zava Customer Loyalty Agent",  # Name of the agent
+        name="Zava Customer Loyalty Agent New",  # Name of the agent
         instructions=CL_PROMPT,  # Instructions for the agent
         toolset=toolset,
     )
