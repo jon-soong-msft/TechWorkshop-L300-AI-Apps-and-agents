@@ -29,12 +29,23 @@ jobs:
         
     - name: Create .env file from secret
       run: |
-        if [ -z "${{ secrets.ENV }}" ]; then
+        echo "Debug: Checking ENV secret..."
+        echo "ENV secret length: ${#ENV_SECRET}"
+        if [ -z "$ENV_SECRET" ]; then
           echo "✗ ENV secret is empty or not set"
           echo "Please set the ENV secret in GitHub repository settings"
           exit 1
         fi
-        echo "${{ secrets.ENV }}" > src/.env
+        # Try direct approach first
+        echo "$ENV_SECRET" > src/.env
+        
+        # If file is empty, try base64 decoding approach
+        if [ ! -s src/.env ] && [ -n "${{ secrets.ENV_BASE64 }}" ]; then
+          echo "Trying base64 decode approach..."
+          echo "${{ secrets.ENV_BASE64 }}" | base64 -d > src/.env
+        fi
+      env:
+        ENV_SECRET: ${{ secrets.ENV }}
         
     - name: Verify .env file creation
       run: |
