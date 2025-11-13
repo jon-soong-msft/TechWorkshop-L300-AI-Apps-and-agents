@@ -29,13 +29,23 @@ jobs:
         
     - name: Create .env file from secret
       run: |
+        if [ -z "${{ secrets.ENV }}" ]; then
+          echo "✗ ENV secret is empty or not set"
+          echo "Please set the ENV secret in GitHub repository settings"
+          exit 1
+        fi
         echo "${{ secrets.ENV }}" > src/.env
         
     - name: Verify .env file creation
       run: |
         if [ -f src/.env ]; then
+          file_size=$(stat -c%s src/.env)
           echo "✓ .env file created successfully"
-          echo "File size: $(stat -c%s src/.env) bytes"
+          echo "File size: $file_size bytes"
+          if [ "$file_size" -eq 0 ]; then
+            echo "✗ .env file is empty - check ENV secret content"
+            exit 1
+          fi
         else
           echo "✗ Failed to create .env file"
           exit 1
